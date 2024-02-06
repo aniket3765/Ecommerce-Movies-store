@@ -5,10 +5,17 @@ import './App.css';
 function App() {
   const[movies,setMovies ] = useState([]);
   const[isLoading, setLoading] = useState(false);
+  const[error, setError] = useState(null);
+  let timeOutId;
 
   async function fetchMoviesHandler () {
+   try {
     setLoading(true);
-    const responce = await fetch('https://swapi.dev/api/films/');
+    setError(null);
+    const responce = await fetch('https://swapi.dev/api/film/');
+    if(!responce.ok) {
+      throw new Error ("Something went wrong!");
+    }
     const data = await responce.json();
 
     const transformedMovies = data.results.map(movieData => {
@@ -20,18 +27,29 @@ function App() {
       }
     })
     setMovies(transformedMovies);
-    setLoading(false);
+    
+  }
+  catch(error){
+    setError(error.message)
+    console.log('error')
+    timeOutId = setTimeout(fetchMoviesHandler,5000);
+
+  }
+  
   }
 
+  let content = <p>no movies found</p>
+  if(movies.length > 0) content = <MoviesList movies={movies} />
+  if(error) content = <p>{error}</p>
+  if(isLoading) content = <p>Loading...</p>
   return (
     <React.Fragment>
       <section>
         <button onClick={fetchMoviesHandler}>Fetch Movies</button>
       </section>
       <section>
-       {!isLoading && movies.length > 0 && <MoviesList movies={movies} />}
-       {!isLoading && movies.length === 0 && <p>Found no movies</p>}
-       {isLoading && <p>Loading...  </p>}
+       {content}
+       {error && <button onClick={() => clearInterval(timeOutId)}>cancel</button>}
       </section>
     </React.Fragment>
   );
