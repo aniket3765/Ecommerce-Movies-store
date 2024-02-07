@@ -12,21 +12,24 @@ function App() {
    try {
     setLoading(true);
     setError(null);
-    const responce = await fetch('https://swapi.dev/api/films/');
+    const responce = await fetch('https://ecomstore-http-default-rtdb.firebaseio.com/movies.json');
     if(!responce.ok) {
       throw new Error ("Something went wrong!");
     }
     const data = await responce.json();
 
-    const transformedMovies = data.results.map(movieData => {
-      return {
-        id:movieData.episode_id,
-        title:movieData.title,
-        openingText:movieData.opening_crawl,
-        releaseDate:movieData.release_date
-      }
-    })
-    setMovies(transformedMovies);
+    const loadedMovies = [];
+
+    for(let key in data){
+      loadedMovies.push({
+        id:key,
+        openingText:data[key].openingText,
+        title:data[key].title,
+        releaseDate:data[key].releaseDate
+      })
+    }
+
+    setMovies(loadedMovies);
     
   }
   catch(error){
@@ -37,20 +40,42 @@ function App() {
   
   },[])
 
+
+  const addMovieHandler = async (movie) => {
+    const responce = await fetch('https://ecomstore-http-default-rtdb.firebaseio.com/movies.json',{
+      method:'POST',
+      body:JSON.stringify(movie),
+      headers:{
+        'Content-Type':'application/json'
+      }
+    });
+    const data = await responce.json();
+    console.log(data)
+  }
+
+  const onDeleteHandler = async (id) => {
+    const responce = await fetch(`https://ecomstore-http-default-rtdb.firebaseio.com/movies/${id}`,{
+      method:'delete'
+    })
+    const data = await responce.json();
+    console.log(data);
+  }
+
   useEffect(()=> {
     fetchMoviesHandler()
   },[fetchMoviesHandler]) 
 
 
-  console.log(movies)
+ 
   let content = <p>no movies found</p>
   if(error) content = <p>{error}</p>
   if(isLoading) content = <p>Loading...</p>
-  if(movies.length > 0) content = <MoviesList movies={movies} />
+  if(movies.length > 0) content = <MoviesList movies={movies} onDelete={onDeleteHandler}/>
   return (
     <React.Fragment>
       <section>
-        <AddMovie onAddMovie={(movie)=> console.log(movie)} />
+        <AddMovie onAddMovie={addMovieHandler} />
+        </section><section>
         <button onClick={fetchMoviesHandler}>Fetch Movies</button>
       </section>
       <section>
